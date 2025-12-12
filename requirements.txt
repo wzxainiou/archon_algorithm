@@ -1,0 +1,9 @@
+# Core dependencies for Jetson Orin Nano benchmarking
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+psutil>=5.9.0
+numpy>=1.24.0
+
+# Optional dependencies for enhanced functionality
+# onnxruntime-gpu  # Install separately on Jetson if needed
+# tensorrt  # Pre-installed on JetPack
