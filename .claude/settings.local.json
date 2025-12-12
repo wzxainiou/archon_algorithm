@@ -4,7 +4,17 @@
       "Bash(mkdir:*)",
       "Bash(chmod:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add Jetson Orin Nano Multi-Model Benchmark with GPU Memory Limits\n\n- Fixed 4-model architecture for YOLO benchmarking\n- Multi-backend support (TensorRT/ONNX/PyTorch)\n- 🔒 Strict 8GB GPU memory limitation with real-time monitoring\n- Comprehensive metrics: FPS, latency, GPU memory, temperature, power\n- Detailed reports (JSON + Markdown) with Memory Safety Summary\n- Full tegrastats and psutil integration\n- TensorRT export scripts and documentation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(nvidia-smi:*)",
+      "Bash(dir:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

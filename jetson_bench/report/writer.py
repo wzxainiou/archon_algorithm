@@ -32,7 +32,7 @@ class ReportWriter:
         """Write Markdown report."""
         output_path = self.output_dir / filename
 
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write("# Jetson Orin Nano Multi-Model Benchmark Report\n\n")
 
             # Memory Safety Summary (NEW)
@@ -124,7 +124,7 @@ class ReportWriter:
                 f.write(f"  - Min: {det.get('min', 0)}\n")
                 f.write(f"  - Max: {det.get('max', 0)}\n")
 
-        # GPU Memory info (NEW)
+        # GPU Memory info
         if "gpu_memory" in model:
             gpu_mem = model["gpu_memory"]
             within_limit = "✅" if gpu_mem.get("within_limit", True) else "❌"
@@ -137,6 +137,135 @@ class ReportWriter:
                 f.write(f"  - Limit Type: {gpu_mem.get('limit_type')}\n")
 
         f.write("\n")
+
+        # NEW: Detection results section
+        if "detection_summary" in model:
+            self._write_detection_section(f, model["detection_summary"])
+
+    def _write_detection_section(self, f, detection_summary: Dict):
+        """Write detection results section."""
+        total_detections = detection_summary.get("total_detections", 0)
+        class_distribution = detection_summary.get("class_distribution", {})
+        frame_detections = detection_summary.get("frame_detections", [])
+
+        f.write(f"#### 📸 检测结果统计\n\n")
+
+        # Class distribution
+        if class_distribution:
+            f.write(f"**类别分布** (共检测到 {total_detections} 个对象):\n\n")
+            # Sort by count descending
+            sorted_classes = sorted(class_distribution.items(), key=lambda x: x[1], reverse=True)
+            for class_name, count in sorted_classes:
+                percentage = (count / total_detections * 100) if total_detections > 0 else 0
+                # Add emoji for common classes
+                emoji = self._get_class_emoji(class_name)
+                f.write(f"- {emoji} **{class_name}**: {count}次 ({percentage:.1f}%)\n")
+            f.write("\n")
+
+        # Frame-by-frame detections
+        if frame_detections:
+            f.write(f"**详细检测结果** (按帧):\n\n")
+            for frame_det in frame_detections:
+                frame_name = frame_det.get("frame_name", "unknown")
+                num_detections = frame_det.get("num_detections", 0)
+                detections = frame_det.get("detections", [])
+
+                f.write(f"**Frame: {frame_name}** ({num_detections} 个对象)\n\n")
+
+                if detections:
+                    for i, det in enumerate(detections, 1):
+                        class_name = det.get("class", "unknown")
+                        confidence = det.get("confidence", 0)
+                        bbox = det.get("bbox", [0, 0, 0, 0])
+                        emoji = self._get_class_emoji(class_name)
+
+                        f.write(f"  {i}. {emoji} **{class_name}** "
+                               f"(置信度: {confidence:.2f}) - "
+                               f"位置: [x1={bbox[0]:.0f}, y1={bbox[1]:.0f}, "
+                               f"x2={bbox[2]:.0f}, y2={bbox[3]:.0f}]\n")
+                else:
+                    f.write(f"  未检测到对象\n")
+
+                f.write("\n")
+
+        f.write("\n")
+
+    def _get_class_emoji(self, class_name: str) -> str:
+        """Get emoji for common object classes."""
+        emoji_map = {
+            "person": "👤",
+            "bicycle": "🚲",
+            "car": "🚗",
+            "motorcycle": "🏍️",
+            "airplane": "✈️",
+            "bus": "🚌",
+            "train": "🚆",
+            "truck": "🚚",
+            "boat": "⛵",
+            "traffic light": "🚦",
+            "fire hydrant": "🚰",
+            "stop sign": "🛑",
+            "bench": "🪑",
+            "bird": "🐦",
+            "cat": "🐱",
+            "dog": "🐶",
+            "horse": "🐴",
+            "sheep": "🐑",
+            "cow": "🐄",
+            "elephant": "🐘",
+            "bear": "🐻",
+            "zebra": "🦓",
+            "giraffe": "🦒",
+            "backpack": "🎒",
+            "umbrella": "☂️",
+            "handbag": "👜",
+            "tie": "👔",
+            "suitcase": "🧳",
+            "sports ball": "⚽",
+            "kite": "🪁",
+            "baseball bat": "⚾",
+            "skateboard": "🛹",
+            "surfboard": "🏄",
+            "tennis racket": "🎾",
+            "bottle": "🍾",
+            "wine glass": "🍷",
+            "cup": "☕",
+            "fork": "🍴",
+            "knife": "🔪",
+            "spoon": "🥄",
+            "bowl": "🥣",
+            "banana": "🍌",
+            "apple": "🍎",
+            "sandwich": "🥪",
+            "orange": "🍊",
+            "broccoli": "🥦",
+            "carrot": "🥕",
+            "pizza": "🍕",
+            "donut": "🍩",
+            "cake": "🍰",
+            "chair": "🪑",
+            "couch": "🛋️",
+            "bed": "🛏️",
+            "toilet": "🚽",
+            "tv": "📺",
+            "laptop": "💻",
+            "mouse": "🖱️",
+            "remote": "📱",
+            "keyboard": "⌨️",
+            "cell phone": "📱",
+            "microwave": "📟",
+            "oven": "🔥",
+            "toaster": "🍞",
+            "refrigerator": "🧊",
+            "book": "📖",
+            "clock": "🕐",
+            "vase": "🏺",
+            "scissors": "✂️",
+            "teddy bear": "🧸",
+            "hair drier": "💨",
+            "toothbrush": "🪥",
+        }
+        return emoji_map.get(class_name, "🔸")
 
     def _write_metrics_section(self, f, metrics: Dict):
         """Write system metrics section."""
@@ -229,7 +358,7 @@ class ReportWriter:
 
         if "top_memory_models" in memory_safety:
             f.write(f"\n**Models Closest to Memory Limit**:\n\n")
-            for i, model_mem in enumerate(memory_safety["top_memory_models"][:3], 1):
+            for i, model_mem in enumerate(memory_safety["top_memory_models"], 1):
                 f.write(f"{i}. **{model_mem['model']}**: {model_mem['peak_gb']:.2f}GB ")
                 f.write(f"({model_mem['peak_gb']/memory_safety.get('limit_gb', 8.0)*100:.1f}% of limit)\n")
 
@@ -354,5 +483,5 @@ class ReportWriter:
             "limit_gb": limit_gb,
             "limit_type": limit_type,
             "total_violations": total_violations,
-            "top_memory_models": model_memory_usage[:3],  # Top 3
+            "top_memory_models": model_memory_usage,  # All 4 models
         }

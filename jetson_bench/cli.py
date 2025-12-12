@@ -160,11 +160,27 @@ def run_model_inference(model_config: ModelConfig, config: BenchConfig,
         # Run inference on all frames
         print("Running inference...")
         frame_count = 0
+        frame_detections = []  # NEW: Store per-frame detection details
 
         with SourceLoader(config.source_type, config.source_path, config.max_frames) as source:
             for frame, frame_id in source:
                 result = model.infer(frame, frame_id)
                 frame_count += 1
+
+                # NEW: Collect detection details for this frame
+                detections = []
+                for i in range(result.num_detections):
+                    detections.append({
+                        "class": result.class_names[i],
+                        "confidence": float(result.scores[i]),
+                        "bbox": result.boxes[i].tolist(),  # [x1, y1, x2, y2]
+                    })
+
+                frame_detections.append({
+                    "frame_name": frame_id,
+                    "num_detections": result.num_detections,
+                    "detections": detections,
+                })
 
                 # Collect GPU memory every frame
                 metrics.collect_gpu_memory()
@@ -182,6 +198,16 @@ def run_model_inference(model_config: ModelConfig, config: BenchConfig,
         print(f"   Latency P50/P90/P99: {performance['latency_ms']['p50']:.1f}/"
               f"{performance['latency_ms']['p90']:.1f}/{performance['latency_ms']['p99']:.1f} ms")
 
+        # NEW: Compute class distribution
+        from collections import Counter
+        all_classes = []
+        for frame_det in frame_detections:
+            for det in frame_det["detections"]:
+                all_classes.append(det["class"])
+
+        class_distribution = dict(Counter(all_classes))
+        total_detections = len(all_classes)
+
         # Get GPU memory stats for this model
         model_gpu_memory = _get_model_gpu_memory_stats(
             metrics.gpu_memory_history[model_gpu_memory_start:],
@@ -195,6 +221,11 @@ def run_model_inference(model_config: ModelConfig, config: BenchConfig,
             "performance": performance,
             "model_info": model.get_model_info(),
             "gpu_memory": model_gpu_memory,
+            "detection_summary": {  # NEW
+                "total_detections": total_detections,
+                "class_distribution": class_distribution,
+                "frame_detections": frame_detections,
+            },
         }
 
     except Exception as e:

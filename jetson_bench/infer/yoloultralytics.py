@@ -25,6 +25,7 @@ class InferenceResult:
     boxes: np.ndarray
     scores: np.ndarray
     classes: np.ndarray
+    class_names: List[str] = field(default_factory=list)  # NEW: Human-readable class names
 
 
 @dataclass
@@ -159,10 +160,14 @@ class YOLOInference:
             boxes = results[0].boxes.xyxy.cpu().numpy()
             scores = results[0].boxes.conf.cpu().numpy()
             classes = results[0].boxes.cls.cpu().numpy()
+
+            # NEW: Convert class IDs to human-readable names
+            class_names = [self.model.names[int(cls)] for cls in classes]
         else:
             boxes = np.array([])
             scores = np.array([])
             classes = np.array([])
+            class_names = []
 
         result = InferenceResult(
             frame_id=frame_id,
@@ -171,6 +176,7 @@ class YOLOInference:
             boxes=boxes,
             scores=scores,
             classes=classes,
+            class_names=class_names,
         )
 
         # Update performance stats
