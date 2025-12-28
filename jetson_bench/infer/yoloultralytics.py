@@ -27,6 +27,32 @@ class InferenceResult:
     classes: np.ndarray
     class_names: List[str] = field(default_factory=list)  # NEW: Human-readable class names
 
+    def to_dict_list(self) -> List[Dict]:
+        """
+        Convert inference result to list of detection dictionaries.
+
+        Returns:
+            List[Dict]: List of detections with format:
+                {
+                    "class": str,
+                    "confidence": float,
+                    "bbox": [x1, y1, x2, y2],
+                    "area": float
+                }
+        """
+        detections = []
+        for i in range(self.num_detections):
+            x1, y1, x2, y2 = self.boxes[i]
+            area = (x2 - x1) * (y2 - y1)
+
+            detections.append({
+                "class": self.class_names[i],
+                "confidence": float(self.scores[i]),
+                "bbox": self.boxes[i].tolist(),
+                "area": float(area),
+            })
+        return detections
+
 
 @dataclass
 class ModelPerformance:
@@ -149,6 +175,11 @@ class YOLOInference:
         """
         start_time = time.perf_counter()
 
+        # DEBUG: Log frame shape on first inference
+        if not hasattr(self, '_logged_shape'):
+            logger.info(f"[{self.model_name}] Input frame shape: {frame.shape}, imgsz: {self.imgsz}")
+            self._logged_shape = True
+
         # Run inference
         results = self.model(frame, verbose=False)
 
@@ -160,6 +191,11 @@ class YOLOInference:
             boxes = results[0].boxes.xyxy.cpu().numpy()
             scores = results[0].boxes.conf.cpu().numpy()
             classes = results[0].boxes.cls.cpu().numpy()
+
+            # DEBUG: Log bbox on first detection
+            if not hasattr(self, '_logged_bbox') and len(boxes) > 0:
+                logger.info(f"[{self.model_name}] First bbox: {boxes[0]}, frame shape: {frame.shape[:2]}")
+                self._logged_bbox = True
 
             # NEW: Convert class IDs to human-readable names
             class_names = [self.model.names[int(cls)] for cls in classes]

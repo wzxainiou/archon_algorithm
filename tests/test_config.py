@@ -32,14 +32,14 @@ def test_model_config_validation():
     assert "Unsupported weight format" in model.skip_reason
 
 
-def test_bench_config_must_have_4_models():
-    """Test that BenchConfig enforces exactly 4 models."""
-    # Should work with default (4 models)
+def test_bench_config_must_have_2_models():
+    """Test that BenchConfig enforces exactly 2 models."""
+    # Should work with default (2 models)
     config = BenchConfig()
-    assert len(config.models) == 4
+    assert len(config.models) == 2
 
     # Should fail if we try to create with wrong number
-    with pytest.raises(ValueError, match="exactly 4 models"):
+    with pytest.raises(ValueError, match="exactly 2 models"):
         config = BenchConfig(models=[ModelConfig(name="only_one")])
 
 
@@ -51,9 +51,12 @@ def test_set_model_weights():
     config.set_model_weights(0, "/path/to/model.pt")
     assert config.models[0].weight_path == "/path/to/model.pt"
 
-    # Invalid index
+    config.set_model_weights(1, "/path/to/thermal_model.pt")
+    assert config.models[1].weight_path == "/path/to/thermal_model.pt"
+
+    # Invalid index (2 is now invalid since we only have 2 models)
     with pytest.raises(ValueError):
-        config.set_model_weights(4, "/path/to/model.pt")
+        config.set_model_weights(2, "/path/to/model.pt")
 
     with pytest.raises(ValueError):
         config.set_model_weights(-1, "/path/to/model.pt")
@@ -66,13 +69,13 @@ def test_get_active_and_skipped_models():
     # Initially all have no weights, so all should be skipped after validation
     config.validate_models()
     assert len(config.get_active_models()) == 0
-    assert len(config.get_skipped_models()) == 4
+    assert len(config.get_skipped_models()) == 2
 
     # Set one model weight to a valid file
     config.set_model_weights(0, __file__)
     config.validate_models()
     assert len(config.get_active_models()) == 1
-    assert len(config.get_skipped_models()) == 3
+    assert len(config.get_skipped_models()) == 1
 
 
 if __name__ == "__main__":

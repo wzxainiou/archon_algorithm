@@ -1,7 +1,7 @@
 """
 Configuration management for Jetson benchmarking.
 
-This module defines the exact 4 model slots and runtime configuration.
+This module defines the exact 2 model slots and runtime configuration.
 """
 
 import os
@@ -38,19 +38,24 @@ class ModelConfig:
 
 @dataclass
 class BenchConfig:
-    """Main benchmark configuration with exactly 4 model slots."""
+    """Main benchmark configuration with exactly 2 model slots."""
 
-    # Exactly 4 model slots (cannot be changed)
+    # Exactly 2 model slots (cannot be changed)
     models: List[ModelConfig] = field(default_factory=lambda: [
         ModelConfig(name="yolo11n_rgb"),
-        ModelConfig(name="yolo11s_rgb"),
         ModelConfig(name="yolo11n_thermal"),
-        ModelConfig(name="yolov8n_thermal"),
     ])
 
-    # Input source configuration
+    # Processing mode: rgb (RGB only), thermal (Thermal only), dual (both streams)
+    mode: Literal["rgb", "thermal", "dual"] = "rgb"
+
+    # Input source configuration (for single stream modes)
     source_type: Literal["image_dir", "video", "camera"] = "image_dir"
     source_path: Optional[str] = None
+
+    # Dual stream sources (for dual mode)
+    rgb_source: Optional[str] = None
+    thermal_source: Optional[str] = None
 
     # Inference parameters
     imgsz: int = 640
@@ -71,9 +76,9 @@ class BenchConfig:
     output_dir: Path = field(default_factory=lambda: Path("outputs"))
 
     def __post_init__(self):
-        """Ensure exactly 4 models and validate GPU memory limit."""
-        if len(self.models) != 4:
-            raise ValueError(f"Must have exactly 4 models, got {len(self.models)}")
+        """Ensure exactly 2 models and validate GPU memory limit."""
+        if len(self.models) != 2:
+            raise ValueError(f"Must have exactly 2 models, got {len(self.models)}")
 
         # Enforce 8GB GPU memory limit
         if self.gpu_mem_limit_gb > 8.0:
@@ -83,8 +88,8 @@ class BenchConfig:
 
     def set_model_weights(self, model_idx: int, weight_path: str):
         """Set weight path for a specific model slot."""
-        if model_idx < 0 or model_idx >= 4:
-            raise ValueError(f"Model index must be 0-3, got {model_idx}")
+        if model_idx < 0 or model_idx >= 2:
+            raise ValueError(f"Model index must be 0-1, got {model_idx}")
         self.models[model_idx].weight_path = weight_path
 
     def validate_source(self) -> bool:
@@ -123,7 +128,7 @@ class BenchConfig:
         return True
 
     def validate_models(self):
-        """Validate all 4 model slots."""
+        """Validate all 2 model slots."""
         for model in self.models:
             model.validate()
 

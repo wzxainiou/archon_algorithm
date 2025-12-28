@@ -74,7 +74,7 @@ class ReportWriter:
             if "summary" in data:
                 f.write("## Summary\n\n")
                 summary = data["summary"]
-                f.write(f"- **Total Models**: 4 (required)\n")
+                f.write(f"- **Total Models**: 2 (required)\n")
                 f.write(f"- **Models Executed**: {summary.get('models_executed', 0)}\n")
                 f.write(f"- **Models Skipped**: {summary.get('models_skipped', 0)}\n")
                 if summary.get('models_skipped', 0) > 0:
@@ -483,5 +483,5 @@ class ReportWriter:
             "limit_gb": limit_gb,
             "limit_type": limit_type,
             "total_violations": total_violations,
-            "top_memory_models": model_memory_usage,  # All 4 models
+            "top_memory_models": model_memory_usage,  # All 2 models
         }

@@ -4,29 +4,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Jetson Orin Nano multi-model inference benchmarking suite** for YOLO object detection models. The project evaluates exactly 4 predefined model slots with comprehensive performance and system resource metrics.
+This is a **Jetson Orin Nano multi-model inference benchmarking suite** for YOLO object detection models. The project evaluates exactly 2 predefined model slots (RGB and Thermal) with comprehensive performance and system resource metrics.
 
 **Key Constraints**:
-1. The architecture is fixed to exactly 4 model slots. This cannot be changed.
+1. The architecture is fixed to exactly 2 model slots. This cannot be changed.
 2. **🔒 GPU memory is strictly limited to 8GB maximum**. This is enforced at runtime.
 
 ## Running the Benchmark
 
-### Main Command
-```bash
-python3 -m jetson_bench.cli --source <SOURCE> [OPTIONS]
-```
+### Processing Modes
+
+The benchmark supports three processing modes via `--mode`:
+
+| Mode | Description | Required Args |
+|------|-------------|---------------|
+| `rgb` | Process RGB stream only | `--source`, `--model0` |
+| `thermal` | Process Thermal stream only | `--source`, `--model1` |
+| `dual` | Process both streams simultaneously | `--rgb_source`, `--thermal_source`, `--model0`/`--model1` |
 
 ### Common Examples
+
 ```bash
-# Image directory
-python3 -m jetson_bench.cli --source image_dir=/path/to/images --model0 /path/to/model.engine
+# RGB mode - single stream
+python3 -m jetson_bench.cli --mode rgb \
+    --source video=/path/to/rgb.mp4 \
+    --model0 yolo11n.pt
 
-# Video with max frames
-python3 -m jetson_bench.cli --source video=/path/to/video.mp4 --max_frames 300 --model0 model.pt
+# Thermal mode - single stream
+python3 -m jetson_bench.cli --mode thermal \
+    --source video=/path/to/thermal.mp4 \
+    --model1 yolo11n.pt
 
-# Camera
-python3 -m jetson_bench.cli --source camera=0 --max_frames 100 --model0 model.pt
+# Dual mode - synchronized dual streams
+python3 -m jetson_bench.cli --mode dual \
+    --rgb_source /path/to/rgb.mp4 \
+    --thermal_source /path/to/thermal.mp4 \
+    --model0 yolo11n.pt \
+    --model1 yolo11n.pt
+
+# Image directory (RGB mode)
+python3 -m jetson_bench.cli --mode rgb \
+    --source image_dir=/path/to/images \
+    --model0 /path/to/model.engine
 ```
 
 ### Running Tests
@@ -45,11 +64,9 @@ yolo export model=/path/to/model.pt format=engine imgsz=640 device=0 half=True
 
 ### Critical Design Constraints
 
-1. **Exactly 4 Model Slots** (IMMUTABLE):
-   - Slot 0: `yolo11n_rgb`
-   - Slot 1: `yolo11s_rgb`
-   - Slot 2: `yolo11n_thermal`
-   - Slot 3: `yolov8n_thermal`
+1. **Exactly 2 Model Slots** (IMMUTABLE):
+   - Slot 0: `yolo11n_rgb` (RGB camera input)
+   - Slot 1: `yolo11n_thermal` (Thermal camera input)
 
    Users can skip models (by not providing weights) but cannot add/remove slots.
 
@@ -72,7 +89,7 @@ yolo export model=/path/to/model.pt format=engine imgsz=640 device=0 half=True
 
 ### Module Organization
 
-- **[jetson_bench/config.py](jetson_bench/config.py)**: Configuration with 4-model validation, source validation, **GPU memory limit**
+- **[jetson_bench/config.py](jetson_bench/config.py)**: Configuration with 2-model validation, source validation, **GPU memory limit**
 - **[jetson_bench/gpu_memory.py](jetson_bench/gpu_memory.py)**: **GPU memory management and enforcement** (NEW)
 - **[jetson_bench/loader.py](jetson_bench/loader.py)**: Unified input source loader (images/video/camera)
 - **[jetson_bench/infer/](jetson_bench/infer/)**:
@@ -93,7 +110,7 @@ yolo export model=/path/to/model.pt format=engine imgsz=640 device=0 half=True
    - PyTorch CUDA memory fraction set
    - TensorRT workspace size determined
    - Limit type determined (hard/soft/unavailable)
-3. Config validates source and all 4 models
+3. Config validates source and all 2 models
 4. Metrics aggregator starts background monitoring (tegrastats + psutil + **GPU memory**)
 5. For each active model:
    - Load model with appropriate backend **and memory constraints**
@@ -112,7 +129,7 @@ yolo export model=/path/to/model.pt format=engine imgsz=640 device=0 half=True
 - **Models**: Individual model failures do not stop execution
   - Skipped models (no weights) → status: "skipped"
   - Failed models (load/inference error) → status: "failed"
-  - All 4 models appear in final report with their status
+  - All 2 models appear in final report with their status
 
 - **Metrics**: Metric collection failures generate warnings but don't crash
   - Missing tegrastats → warning + limited GPU metrics
@@ -142,7 +159,7 @@ All sources implement iterator protocol for consistent usage.
 
 ### Adding Support for New Model Architectures
 
-**DO NOT** add a 5th model slot. The 4-slot design is intentional.
+**DO NOT** add a 3rd model slot. The 2-slot design is intentional.
 
 To support different model architectures within the existing slots:
 1. Ensure Ultralytics supports the model format

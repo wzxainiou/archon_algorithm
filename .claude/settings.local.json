@@ -14,7 +14,19 @@
       "Bash(nvidia-smi:*)",
       "Bash(dir:*)",
       "Bash(pip uninstall:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(tree:*)",
+      "Bash(py -3:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(cmd /c \"python c:\\\\Users\\\\王照旭\\\\Desktop\\\\CODE\\\\archon_algorithm\\\\scripts\\\\split_triple_video.py c:\\\\Users\\\\王照旭\\\\Desktop\\\\CODE\\\\archon_algorithm\\\\data\\\\test_videos\\\\2022-05-08-11-23-59.mp4\")",
+      "Bash(powershell -Command:*)",
+      "Bash(python3 -m pip list:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)",
+      "Bash(cmd.exe /c \"c:\\\\Users\\\\王照旭\\\\Desktop\\\\CODE\\\\archon_algorithm\\\\run_test.bat\")",
+      "Bash(cat:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
